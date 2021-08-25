@@ -76,18 +76,28 @@ def expand_user(username):
     return following
 
 
-explore_queue = ExploreQueue([screen_name])
+EXPANSIONS_PER_NODE = 500
 
-while explore_queue:
-    current_name = explore_queue.pop(0)
-    if not store.has_seen_user(current_name):
-        expand_user(current_name)
+explore_queue = ExploreQueue(
+    [screen_name], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7
+)
+next_level = ExploreQueue([], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7)
 
-    buffer = explore_queue.estimate_free()
-    neighborhood = store.get_neighbors(current_name).limit(buffer)
-    for user in neighborhood:
-        log(f"Adding to seeds:", user.username)
-        explore_queue.append(user.username)
+# BFS search
+while len(explore_queue) or len(next_level):
+    while len(explore_queue) > 0:
+        current_name = explore_queue.pop(0)
+        if not store.has_seen_user(current_name):
+            expand_user(current_name)
 
-    log(f"Queue length {len(explore_queue)}")
-    store.log_db_stats()
+        buffer = next_level.estimate_free()
+        neighborhood = store.get_neighbors(current_name).limit(buffer)
+        for user in neighborhood:
+            log(f"Adding to seeds:", user.username)
+            next_level.append(user.username)
+
+        log(f"Queue length {len(explore_queue)} Next level {len(next_level)}")
+        store.log_db_stats()
+
+    explore_queue = next_level
+    next_level = ExploreQueue([], max_buffer=500, max_capacity=1e7)

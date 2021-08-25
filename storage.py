@@ -98,7 +98,6 @@ class Storage:
                 and TwitterProfile.followers_count > 200
                 and TwitterProfile.tweet_count > 200
             )
-            .order_by(fn.Random())
         )
         return neighbors
 
