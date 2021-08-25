@@ -73,9 +73,14 @@ class Storage:
 
     def has_seen_user(self, user):
         profile = TwitterProfile.get(TwitterProfile.username == user.username)
-        log(f'{user.name} seen?', profile.last_expanded)
+        log(f"{user.name} seen?", profile.last_expanded)
         return profile.last_expanded is not None
 
     def clear(self):
         db.drop_tables(MODELS)
         db.create_tables(MODELS)
+
+    def log_db_stats(self):
+        n_users = TwitterProfile.select().count()
+        n_connections = Follow.select().count()
+        log(f"db now has {n_users} users and {n_connections} connections")

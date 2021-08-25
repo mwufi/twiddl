@@ -103,3 +103,5 @@ while explore_queue:
     for user in seeds:
         log("Adding to seeds:", user)
         explore_queue.append(user)
+    
+    store.log_db_stats()
