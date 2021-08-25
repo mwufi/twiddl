@@ -71,14 +71,36 @@ class Storage:
             profile = TwitterProfile.get(TwitterProfile.username == user.username)
         return profile
 
-    def has_seen_user(self, user):
-        profile = TwitterProfile.get(TwitterProfile.username == user.username)
-        log(f"{user.name} seen?", profile.last_expanded)
+    def has_seen_user(self, username):
+        profile = TwitterProfile.get(TwitterProfile.username == username)
+        log(f"{username} seen?", profile.last_expanded)
         return profile.last_expanded is not None
 
     def clear(self):
         db.drop_tables(MODELS)
         db.create_tables(MODELS)
+
+    def get_profile_by_username(self, username):
+        """Returns the TwitterProfile of this user"""
+        profile = TwitterProfile.get(TwitterProfile.username == username)
+        return profile
+
+    def get_neighbors(self, username):
+        """Returns a list of TwitterProfiles that this user follow"""
+        profile = self.get_profile_by_username(username)
+        id = profile.id
+        neighbors = (
+            TwitterProfile.select()
+            .join(Follow, on=(TwitterProfile.id == Follow.celebrity_id))
+            .where(Follow.fan_id == id)
+            .where(
+                TwitterProfile.following_count > 200
+                and TwitterProfile.followers_count > 200
+                and TwitterProfile.tweet_count > 200
+            )
+            .order_by(fn.Random())
+        )
+        return neighbors
 
     def log_db_stats(self):
         n_users = TwitterProfile.select().count()

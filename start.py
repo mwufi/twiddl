@@ -3,9 +3,8 @@ import tweepy
 from storage import TwitterProfile, Follow, Storage
 from twitter_client import client
 from test_log import log
-import random
-import numpy as np
 from datetime import datetime
+from utils import ExploreQueue
 
 store = Storage()
 store.init()
@@ -31,20 +30,24 @@ seed_user = store.save_user(user)
 print(user.id, user.name)
 
 
-def mark_expanded(user):
-    query = TwitterProfile.update(last_expanded=datetime.now()).where(TwitterProfile.username == user.username)
+def mark_expanded(username):
+    query = TwitterProfile.update(last_expanded=datetime.now()).where(
+        TwitterProfile.username == username
+    )
     n = query.execute()
-    log(f"{n} Finished exploring", user.username)
+    log(f"{n} Finished exploring", username)
 
 
-def expand_user(user):
+def expand_user(username):
     """Explore the neighborhood of one user"""
-    log(f"Exploring", user)
+    log(f"Exploring", username)
+
+    seed_user = store.get_profile_by_username(username)
 
     following = []
     for response in tweepy.Paginator(
         client.get_users_following,
-        user.id,
+        seed_user.twitter_id,
         user_fields=user_fields,
         max_results=1000,
         limit=1,
@@ -68,40 +71,23 @@ def expand_user(user):
     log(f"Created {f_count} users!")
     log(f"Created {created_count} connections!")
 
-    mark_expanded(next_user)
+    mark_expanded(username)
 
     return following
 
 
-def sample_next_user(neighborhood, k=5):
-    """Decide who to expand next"""
-    score = (
-        lambda user: np.log10(user.public_metrics["tweet_count"] + 1)
-        + np.log10(user.public_metrics["followers_count"] + 1)
-        - np.log10(user.public_metrics["following_count"] + 1)
-    )
-    weights = [score(user) for user in neighborhood]
-    names = [user.username for user in neighborhood]
-    my_choices = random.choices(names, weights, k=k)
-
-    # dedup any random choices
-    my_choices = list(set(my_choices))
-    name2user = {user.username: user for user in neighborhood}
-    return map(lambda name: name2user[name], my_choices)
-
-
-explore_queue = [user]
+explore_queue = ExploreQueue([screen_name])
 
 while explore_queue:
-    next_user = explore_queue.pop(0)
-    if store.has_seen_user(next_user):
-        log(f"Has seen {user.name} before!")
-        continue
-    
-    neighborhood = expand_user(next_user)
-    seeds = sample_next_user(neighborhood, k=200)
-    for user in seeds:
-        log("Adding to seeds:", user)
-        explore_queue.append(user)
-    
+    current_name = explore_queue.pop(0)
+    if not store.has_seen_user(current_name):
+        expand_user(current_name)
+
+    buffer = explore_queue.estimate_free()
+    neighborhood = store.get_neighbors(current_name).limit(buffer)
+    for user in neighborhood:
+        log(f"Adding to seeds:", user.username)
+        explore_queue.append(user.username)
+
+    log(f"Queue length {len(explore_queue)}")
     store.log_db_stats()

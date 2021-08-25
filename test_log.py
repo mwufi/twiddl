@@ -55,10 +55,10 @@ class Puppy:
         return f"I'm a puppy named {self.name}"
 
 
-log({"a": 1, "b": 2})
-log(myFormatter, "hi there!", 1 + 2)
-log("simple.test", Puppy("jo"))
-log(emoji.emojize("Python is :thumbs_up:"))
-log("ok, pure emoji now 😻")
-logger.info("So should this")
-logger.error("And non-ASCII stuff, too, like Øresund and Malmö")
+# log({"a": 1, "b": 2})
+# log(myFormatter, "hi there!", 1 + 2)
+# log("simple.test", Puppy("jo"))
+# log(emoji.emojize("Python is :thumbs_up:"))
+# log("ok, pure emoji now 😻")
+# logger.info("So should this")
+# logger.error("And non-ASCII stuff, too, like Øresund and Malmö")
