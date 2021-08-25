@@ -1,0 +1,9 @@
+*.ipynb
+*.db
+
+keys.py
+
+tweepy
+other
+.ipynb_checkpionts
+__pycache__
