@@ -32,9 +32,9 @@ print(user.id, user.name)
 
 
 def mark_expanded(user):
-    profile = TwitterProfile.get(TwitterProfile.username == user.username)
-    profile.last_expanded = datetime.now()
-    log(f"Finished exploring", user.username, profile.last_expanded)
+    query = TwitterProfile.update(last_expanded=datetime.now()).where(TwitterProfile.username == user.username)
+    n = query.execute()
+    log(f"{n} Finished exploring", user.username)
 
 
 def expand_user(user):
