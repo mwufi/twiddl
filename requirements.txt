@@ -1,1 +1,4 @@
 peewee
+pandas
+matplotlib
+python-json-logger

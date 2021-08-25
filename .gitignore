@@ -1,5 +1,7 @@
 *.ipynb
 *.db
+*.log
+*.csv
 
 keys.py
 

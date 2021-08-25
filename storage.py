@@ -1,4 +1,6 @@
+from re import I
 from peewee import *
+from test_log import log
 
 db = SqliteDatabase("twitter.db")
 
@@ -27,6 +29,8 @@ class TwitterProfile(BaseModel):
     tweet_count = IntegerField()
     listed_count = IntegerField()
     created_at = DateTimeField()
+
+    last_expanded = DateTimeField(null=True)
 
 
 class Follow(BaseModel):
@@ -61,10 +65,16 @@ class Storage:
                 following_count=user.public_metrics["following_count"],
                 tweet_count=user.public_metrics["tweet_count"],
                 listed_count=user.public_metrics["listed_count"],
+                last_expanded=None,
             )
         except IntegrityError:
             profile = TwitterProfile.get(TwitterProfile.username == user.username)
         return profile
+
+    def has_seen_user(self, user):
+        profile = TwitterProfile.get(TwitterProfile.username == user.username)
+        log(f'{user.name} seen?', profile.last_expanded)
+        return profile.last_expanded is not None
 
     def clear(self):
         db.drop_tables(MODELS)
