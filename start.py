@@ -79,6 +79,7 @@ def expand_user(username):
 
 
 EXPANSIONS_PER_NODE = 500
+BEGIN_TIME = datetime.now()
 
 explore_queue = ExploreQueue(
     [screen_name], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7
@@ -114,6 +115,7 @@ while len(explore_queue) or len(next_level):
                     "Queue length": len(explore_queue),
                     "Next level": len(next_level),
                     **db_stats,
+                    'elapsed (minutes)': (datetime.now() - BEGIN_TIME).total_seconds() / 60
                 },
             )
 
