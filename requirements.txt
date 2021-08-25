@@ -1,4 +1,4 @@
 peewee
 pandas
 matplotlib
-python-json-logger
+discord-webhook

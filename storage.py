@@ -105,3 +105,4 @@ class Storage:
         n_users = TwitterProfile.select().count()
         n_connections = Follow.select().count()
         log(f"db now has {n_users} users and {n_connections} connections")
+        return {"n_users": n_users, "n_connections": n_connections}

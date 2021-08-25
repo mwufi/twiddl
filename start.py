@@ -5,6 +5,7 @@ from twitter_client import client
 from test_log import log
 from datetime import datetime
 from utils import ExploreQueue
+from discord import log_to_discord
 
 store = Storage()
 store.init()
@@ -41,6 +42,7 @@ def mark_expanded(username):
 def expand_user(username):
     """Explore the neighborhood of one user"""
     log(f"Exploring", username)
+    log_to_discord(f"Exploring {username}...")
 
     seed_user = store.get_profile_by_username(username)
 
@@ -84,9 +86,12 @@ explore_queue = ExploreQueue(
 next_level = ExploreQueue([], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7)
 
 # BFS search
+explore_count = 0
 while len(explore_queue) or len(next_level):
     while len(explore_queue) > 0:
         current_name = explore_queue.pop(0)
+        explore_count += 1
+
         if not store.has_seen_user(current_name):
             expand_user(current_name)
 
@@ -97,7 +102,17 @@ while len(explore_queue) or len(next_level):
             next_level.append(user.username)
 
         log(f"Queue length {len(explore_queue)} Next level {len(next_level)}")
-        store.log_db_stats()
+        db_stats = store.log_db_stats()
+        log_to_discord(
+            "Finished exploring",
+            title=f"# {explore_count}",
+            author_name=current_name,
+            extras={
+                "Queue length": len(explore_queue),
+                "Next level": len(next_level),
+                **db_stats,
+            },
+        )
 
     explore_queue = next_level
     next_level = ExploreQueue([], max_buffer=500, max_capacity=1e7)
