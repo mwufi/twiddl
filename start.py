@@ -89,11 +89,13 @@ next_level = ExploreQueue([], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7)
 explore_count = 0
 while len(explore_queue) or len(next_level):
     while len(explore_queue) > 0:
+        show_stats = False
         current_name = explore_queue.pop(0)
         explore_count += 1
 
         if not store.has_seen_user(current_name):
             expand_user(current_name)
+            show_stats = True
 
         buffer = next_level.estimate_free()
         neighborhood = store.get_neighbors(current_name).limit(buffer)
@@ -103,16 +105,17 @@ while len(explore_queue) or len(next_level):
 
         log(f"Queue length {len(explore_queue)} Next level {len(next_level)}")
         db_stats = store.log_db_stats()
-        log_to_discord(
-            "Finished exploring",
-            title=f"# {explore_count}",
-            author_name=current_name,
-            extras={
-                "Queue length": len(explore_queue),
-                "Next level": len(next_level),
-                **db_stats,
-            },
-        )
+        if show_stats:
+            log_to_discord(
+                "Finished exploring",
+                title=f"# {explore_count}",
+                author_name=current_name,
+                extras={
+                    "Queue length": len(explore_queue),
+                    "Next level": len(next_level),
+                    **db_stats,
+                },
+            )
 
     explore_queue = next_level
     next_level = ExploreQueue([], max_buffer=500, max_capacity=1e7)

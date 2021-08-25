@@ -1,3 +1,4 @@
+from discord import log_to_discord
 from re import I
 from peewee import *
 from test_log import log
@@ -68,7 +69,18 @@ class Storage:
                 last_expanded=None,
             )
         except IntegrityError:
-            profile = TwitterProfile.get(TwitterProfile.username == user.username)
+            try:
+                profile = TwitterProfile.get(TwitterProfile.twitter_id == user.id)
+            except:
+                log_to_discord(
+                    "ERROR!",
+                    title="ERROR!",
+                    description="Can't find user",
+                    extras={
+                        "username": user.username,
+                        "id": user.id,
+                    },
+                )
         return profile
 
     def has_seen_user(self, username):
