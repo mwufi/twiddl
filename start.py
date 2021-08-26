@@ -12,7 +12,7 @@ store = Storage()
 store.init()
 
 # get seed user!
-screen_name = "aliettedb"
+screen_name = "tordotcom"
 user_fields = [
     "created_at",
     "description",
@@ -86,44 +86,75 @@ BEGIN_TIME = datetime.now()
 first_level = ExploreQueue(
     [screen_name], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7
 )
-next_level = ExploreQueue([], max_buffer=20, max_capacity=2e4)
+
+# Actually, we can set max_buffer to really high because... it's actually a heap
+# so a bigger number will give us a better idea of who to explore
+next_level = ExploreQueue([], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7)
 
 algo = MixedNeighborSelector(min_count=200, max_count=1e6)
-
-# BFS search
 explore_count = 0
-while len(first_level) or len(next_level):
-    while len(first_level) > 0:
-        show_stats = False
-        current_name = first_level.pop(0)
-        explore_count += 1
 
-        if not store.has_seen_user(current_name):
-            expand_user(current_name)
-            show_stats = True
+# Add everyone that the seed users are following
+while len(first_level) > 0:
+    show_stats = False
+    current_name = first_level.pop(0)
+    explore_count += 1
 
-        # Always add neighbors to list, since... we want to continue the BFS
-        # where we left off...
-        buffer = next_level.estimate_free()
-        neighborhood = algo.get_neighbors(store, current_name).limit(buffer)
-        for user in neighborhood:
-            log(f"Adding to seeds:", user.username)
-            next_level.append(user.username)
+    if not store.has_seen_user(current_name):
+        expand_user(current_name)
+        show_stats = True
 
-        log(f"Queue length {len(first_level)} Next level {len(next_level)}")
-        elapsed = datetime.now() - BEGIN_TIME
-        if show_stats:
-            log_to_discord(
-                "Finished exploring",
-                title=f"# {explore_count}",
-                author_name=current_name,
-                extras={
-                    "Queue length": len(first_level),
-                    "Next level": len(next_level),
-                    "elapsed (minutes)": str(elapsed.total_seconds() / 60),
-                    **store.log_db_stats(),
-                },
-            )
+    # Always add neighbors to list, since... we want to continue the BFS
+    # where we left off...
+    buffer = EXPANSIONS_PER_NODE
+    neighborhood = algo.get_neighbors(store, current_name).limit(buffer)
+    for user in neighborhood:
+        log(f"Adding to seeds:", user.username)
+        next_level.append(user.username)
 
-    first_level = next_level
-    next_level = ExploreQueue([], max_buffer=20, max_capacity=2e4)
+    log(f"Queue length {len(first_level)} Next level {len(next_level)}")
+    elapsed = datetime.now() - BEGIN_TIME
+    if show_stats:
+        log_to_discord(
+            "Finished exploring",
+            title=f"# {explore_count}",
+            author_name=current_name,
+            extras={
+                "Queue length": len(first_level),
+                "Next level": len(next_level),
+                "elapsed (minutes)": str(elapsed.total_seconds() / 60),
+                **store.log_db_stats(),
+            },
+        )
+
+# For the infinite search, we limit the number of neighbors
+while len(next_level) > 0:
+    show_stats = False
+    current_name = next_level.pop(0)
+    explore_count += 1
+
+    if not store.has_seen_user(current_name):
+        expand_user(current_name)
+        show_stats = True
+
+    # Always add neighbors to list, since... we want to continue the BFS
+    # where we left off...
+    buffer = next_level.estimate_free()
+    neighborhood = algo.get_neighbors(store, current_name).limit(buffer)
+    for user in neighborhood:
+        log(f"Adding to seeds:", user.username)
+        next_level.append(user.username)
+
+    log(f"Queue length {len(next_level)}")
+    elapsed = datetime.now() - BEGIN_TIME
+    if show_stats:
+        log_to_discord(
+            "Finished exploring",
+            title=f"# {explore_count}",
+            author_name=current_name,
+            extras={
+                "Queue length": len(next_level),
+                "elapsed (minutes)": str(elapsed.total_seconds() / 60),
+                **store.log_db_stats(),
+            },
+        )

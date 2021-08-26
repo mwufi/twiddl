@@ -24,10 +24,8 @@ class ExploreQueue:
         h = [(-count, item) for item, count in self._counts.items()]
         heapq.heapify(h)
         count, item = heapq.heappop(h)
-        log("popped count of", -count)
-        if not self.test:
-            log_to_discord("Popped", item, "with a count of", count)
-        self._counts[item] = 0
+        log("popped", item, 'with a count of', -count)
+        del self._counts[item]
         return item
 
     def estimate_free(self):
