@@ -102,6 +102,8 @@ while len(explore_queue) or len(next_level):
             expand_user(current_name)
             show_stats = True
 
+        # Always add neighbors to list, since... we want to continue the BFS
+        # where we left off...
         buffer = next_level.estimate_free()
         neighborhood = algo.get_neighbors(store, current_name).limit(buffer)
         for user in neighborhood:
@@ -109,7 +111,7 @@ while len(explore_queue) or len(next_level):
             next_level.append(user.username)
 
         log(f"Queue length {len(explore_queue)} Next level {len(next_level)}")
-        db_stats = store.log_db_stats()
+        elapsed = datetime.now() - BEGIN_TIME
         if show_stats:
             log_to_discord(
                 "Finished exploring",
@@ -118,9 +120,8 @@ while len(explore_queue) or len(next_level):
                 extras={
                     "Queue length": len(explore_queue),
                     "Next level": len(next_level),
-                    **db_stats,
-                    "elapsed (minutes)": (datetime.now() - BEGIN_TIME).total_seconds()
-                    / 60,
+                    "elapsed (minutes)": str(elapsed.total_seconds() / 60),
+                    **store.log_db_stats(),
                 },
             )
 

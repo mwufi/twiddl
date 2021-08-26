@@ -3,8 +3,9 @@ from discord_webhook import DiscordWebhook, DiscordEmbed
 
 
 def log_to_discord(
-    msg, title="", description="", author_name="", author_url="", extras={}
+    *args, title="", description="", author_name="", author_url="", extras={}
 ):
+    msg = " ".join(map(str, args))
     webhook = DiscordWebhook(url=webhook_url, content=msg)
 
     if title or description:
