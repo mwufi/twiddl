@@ -84,9 +84,13 @@ class Storage:
         return profile
 
     def has_seen_user(self, username):
-        profile = TwitterProfile.get(TwitterProfile.username == username)
-        log(f"{username} seen?", profile.last_expanded)
-        return profile.last_expanded is not None
+        try:
+            profile = TwitterProfile.get(TwitterProfile.username == username)
+            log(f"{username} seen?", profile.last_expanded)
+            return profile.last_expanded is not None
+        except:
+            log(f"{username} seen? Nope, not even close")
+            return False
 
     def clear(self):
         db.drop_tables(MODELS)
