@@ -97,22 +97,6 @@ class Storage:
         profile = TwitterProfile.get(TwitterProfile.username == username)
         return profile
 
-    def get_neighbors(self, username):
-        """Returns a list of TwitterProfiles that this user follow"""
-        profile = self.get_profile_by_username(username)
-        id = profile.id
-        neighbors = (
-            TwitterProfile.select()
-            .join(Follow, on=(TwitterProfile.id == Follow.celebrity_id))
-            .where(Follow.fan_id == id)
-            .where(
-                TwitterProfile.following_count > 200
-                and TwitterProfile.followers_count > 200
-                and TwitterProfile.tweet_count > 200
-            )
-        )
-        return neighbors
-
     def log_db_stats(self):
         n_users = TwitterProfile.select().count()
         n_connections = Follow.select().count()

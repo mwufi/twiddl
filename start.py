@@ -6,6 +6,7 @@ from test_log import log
 from datetime import datetime
 from utils import ExploreQueue
 from discord import log_to_discord
+from neighbors import MixedNeighborSelector
 
 store = Storage()
 store.init()
@@ -60,7 +61,8 @@ def expand_user(username):
 
         log("get_users_following", response.meta)
         users = response.data
-        following += users
+        if users:
+            following += users
 
     f_count = 0
     created_count = 0
@@ -86,6 +88,8 @@ explore_queue = ExploreQueue(
 )
 next_level = ExploreQueue([], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7)
 
+algo = MixedNeighborSelector(min_count=200, max_count=1e6)
+
 # BFS search
 explore_count = 0
 while len(explore_queue) or len(next_level):
@@ -99,7 +103,7 @@ while len(explore_queue) or len(next_level):
             show_stats = True
 
         buffer = next_level.estimate_free()
-        neighborhood = store.get_neighbors(current_name).limit(buffer)
+        neighborhood = algo.get_neighbors(store, current_name).limit(buffer)
         for user in neighborhood:
             log(f"Adding to seeds:", user.username)
             next_level.append(user.username)
@@ -115,7 +119,8 @@ while len(explore_queue) or len(next_level):
                     "Queue length": len(explore_queue),
                     "Next level": len(next_level),
                     **db_stats,
-                    'elapsed (minutes)': (datetime.now() - BEGIN_TIME).total_seconds() / 60
+                    "elapsed (minutes)": (datetime.now() - BEGIN_TIME).total_seconds()
+                    / 60,
                 },
             )
 
