@@ -80,22 +80,22 @@ def expand_user(username):
     return following
 
 
-EXPANSIONS_PER_NODE = 500
+EXPANSIONS_PER_NODE = 1000
 BEGIN_TIME = datetime.now()
 
-explore_queue = ExploreQueue(
+first_level = ExploreQueue(
     [screen_name], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7
 )
-next_level = ExploreQueue([], max_buffer=EXPANSIONS_PER_NODE, max_capacity=1e7)
+next_level = ExploreQueue([], max_buffer=20, max_capacity=2e4)
 
 algo = MixedNeighborSelector(min_count=200, max_count=1e6)
 
 # BFS search
 explore_count = 0
-while len(explore_queue) or len(next_level):
-    while len(explore_queue) > 0:
+while len(first_level) or len(next_level):
+    while len(first_level) > 0:
         show_stats = False
-        current_name = explore_queue.pop(0)
+        current_name = first_level.pop(0)
         explore_count += 1
 
         if not store.has_seen_user(current_name):
@@ -110,7 +110,7 @@ while len(explore_queue) or len(next_level):
             log(f"Adding to seeds:", user.username)
             next_level.append(user.username)
 
-        log(f"Queue length {len(explore_queue)} Next level {len(next_level)}")
+        log(f"Queue length {len(first_level)} Next level {len(next_level)}")
         elapsed = datetime.now() - BEGIN_TIME
         if show_stats:
             log_to_discord(
@@ -118,12 +118,12 @@ while len(explore_queue) or len(next_level):
                 title=f"# {explore_count}",
                 author_name=current_name,
                 extras={
-                    "Queue length": len(explore_queue),
+                    "Queue length": len(first_level),
                     "Next level": len(next_level),
                     "elapsed (minutes)": str(elapsed.total_seconds() / 60),
                     **store.log_db_stats(),
                 },
             )
 
-    explore_queue = next_level
-    next_level = ExploreQueue([], max_buffer=500, max_capacity=1e7)
+    first_level = next_level
+    next_level = ExploreQueue([], max_buffer=20, max_capacity=2e4)
